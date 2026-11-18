@@ -1,0 +1,30 @@
+name: Deploy
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: codeberg-tiny
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build
+        uses: https://github.com/drtheodor/static-file-server-actions/pages@main
+        
+
+      - name: Deploy to Codeberg Pages
+        uses: https://codeberg.org/git-pages/action@v2
+        with:
+          # Standard project site URL (see notes below for root/custom domains)
+          site: https:/vmbbi.is-a.dev/${{ forgejo.event.repository.name }}/
+          token: ${{ forgejo.token }}
+          source: .
