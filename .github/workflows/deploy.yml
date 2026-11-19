@@ -1,9 +1,9 @@
 name: Deploy
 
 on:
-  # Runs on pushes targeting the default branch
+  # Runs when upstream repos or manual commits update the default branch
   push:
-    branches: ["pages"]
+    branches: ["main"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # Set to "<codeberg-user>/<repo>" (or "<codeberg-user>/pages" for a root user/org site)
+  # Target Codeberg repository: "<codeberg-user>/<repo>" (or "<codeberg-user>/pages" for a root user/org site)
   SFS_REPO: ${{ github.repository }}
 
 jobs:
@@ -30,13 +30,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build
-        uses: vmbbi/static-server-file-action/pages@main
+        uses: vmbbi/static-file-server-actions/pages@main
         with:
-          build-dir: '.'
+          build-dir: '_site'
 
-      - name: Deploy to Codeberg Pages
-        uses: vmbbi/static-server-file-action@main
-        with:
-          published: '.'
-          path: '.'
-          token: ${{ secrets.CODEBERG_TOKEN }}
+      - name: Push to Codeberg Pages
+        shell: bash
+        run: |
+          cd _site
+          git init -b pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: deploy pages"
+          git remote add origin "https://${{ secrets.CODEBERG_TOKEN }}@codeberg.org/${{ env.SFS_REPO }}.git"
+          git push --force origin pages
