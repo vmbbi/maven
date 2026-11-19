@@ -1,30 +1,42 @@
 name: Deploy
 
 on:
+  # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
+env:
+  # Set to "<codeberg-user>/<repo>" (or "<codeberg-user>/pages" for a root user/org site)
+  SFS_REPO: ${{ github.repository }}
+
 jobs:
-  build-and-deploy:
-    name: Build and Deploy
-    runs-on: codeberg-tiny
+  deploy:
+    name: Build and Deploy to Codeberg Pages
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Build
-        uses: https://github.com/drtheodor/static-file-server-actions/pages@main
-        
+        uses: vmbbi/static-server-file-action/pages@main
+        with:
+          build-dir: '.'
 
       - name: Deploy to Codeberg Pages
-        uses: https://codeberg.org/git-pages/action@v2
+        uses: vmbbi/static-server-file-action@main
         with:
-          # Standard project site URL (see notes below for root/custom domains)
-          site: https:/vmbbi.is-a.dev/${{ forgejo.event.repository.name }}/
-          token: ${{ forgejo.token }}
-          source: .
+          published: '.'
+          path: '.'
+          token: ${{ secrets.CODEBERG_TOKEN }}
